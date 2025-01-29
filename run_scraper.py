@@ -3,35 +3,35 @@ import os
 from bs4 import BeautifulSoup
 import csv
 
-url = "https://books.toscrape.com/"
+base_url = "https://books.toscrape.com/"
 
 def scrape_categories():
-    """Récupère uniquement les liens des catégories réelles, en ignorant 'books'"""
+    #Récupère uniquement les liens des catégories réelles, en ignorant 'books"
     print("Début de la recherche des catégories...")
     all_categories_links = []
-    response = requests.get(url)
-    if response.status_code == 200:
+    response = requests.get(base_url)
+    if response.status_code == 200: #On vérifie que la requête marche
         soup = BeautifulSoup(response.text, 'html.parser')
         categories = soup.find("div", class_="side_categories")
         links_categories = categories.find_all("a")
         for categories_title in links_categories[1:]:  # Ignorer le premier lien (books)
-            addition_url = url + categories_title["href"]
-            all_categories_links.append((categories_title.text.strip(), addition_url))
+            concatenation_url = base_url + categories_title["href"]
+            all_categories_links.append((categories_title.text.strip(), concatenation_url))
         print(f"{len(all_categories_links)} catégories trouvées")
     return all_categories_links
 
 def download_image(image_url, book_title, category_name):
-    """Télécharge l'image d'un livre"""
-    print(f"Tentative de téléchargement de l'image pour : {book_title}")  # Debug
-    images_dir = category_name + "/book_images"
-    os.makedirs(images_dir, exist_ok=True)
+    "Télécharge l'image d'un livre"
+    print(f"Tentative de téléchargement de l'image pour : {book_title}")  # Print verificatif de la fontion
+    image_directory = category_name + "/book_images"
+    os.makedirs(image_directory, exist_ok=True)
 
      # Nettoyage manuel des caractères spéciaux
     clean_title = book_title.replace(":", "_").replace("#", "_").replace("/", "_")
     clean_title = clean_title.replace("\\", "_").replace("*", "_").replace("?", "_")
     clean_title = clean_title.replace("\"", "_").replace("<", "_").replace(">", "_").replace("|", "_")
     image_name = clean_title.replace(" ", "_").lower()[:50] + ".jpg"  # Limite à 50 caractères
-    image_path = os.path.join(images_dir, image_name)
+    image_path = os.path.join(image_directory, image_name)
     response_image = requests.get(image_url)
     if response_image.status_code == 200:
         with open(image_path, "wb") as f:
@@ -40,8 +40,8 @@ def download_image(image_url, book_title, category_name):
     else:
         print(f"Erreur de téléchargement de l'image pour {book_title}. URL : {image_url}")
 
-def scrape_book_infos(url_product):
-    """Récupère les informations détaillées d'un livre"""
+def book_data_scraper(url_product):
+    #Récupère les informations détaillées d'un livre
     print(f"Récupération des informations du livre : {url_product}")
     response = requests.get(url_product)
     if response.status_code == 200:
@@ -49,27 +49,27 @@ def scrape_book_infos(url_product):
         
         try:
             # Extraction des informations de base
-            products_infos = soup.find_all("td")
-            if not products_infos:
+            product_details = soup.find_all("td")
+            if not product_details:
                 print(f"Aucune information trouvée pour le livre : {url_product}")
                 return None
             
-            product_infos_values = [info.text for info in products_infos]
+            product_data = [info.text for info in product_details]
             
-            upc = product_infos_values[0]
-            prices_including_taxes = product_infos_values[2]
-            prices_excluding_taxes = product_infos_values[3]
-            number_available = product_infos_values[5].replace("In stock (", "").replace("available)", "")
+            upc = product_data[0]
+            prices_including_taxes = product_data[2]
+            prices_excluding_taxes = product_data[3]
+            number_available = product_data[5].replace("In stock (", "").replace("available)", "")
             product_description = soup.find_all("p")[3].text
             category = soup.find_all("a")[3].text
             
             # Extraction de la note de review
-            review_element = soup.find("p", class_="star-rating")
-            if not review_element:
+            rating_data = soup.find("p", class_="star-rating")
+            if not rating_data:
                 print(f"Aucune note de review trouvée pour le livre : {url_product}")
                 return None
             
-            review = review_element["class"][1]
+            review = rating_data["class"][1]
             mapping = {"Four": 4, "One": 1, "Two": 2, "Three": 3, "Five": 5}
             review_rating = mapping[review]
             
@@ -80,8 +80,8 @@ def scrape_book_infos(url_product):
                 return None
             
             image_cover = thumbnail_div.find("img")["src"]
-            image_clean = image_cover.lstrip("./")  # Supprime les './' et '../'
-            image_url = url + image_clean  # Supprimer "catalogue/"
+            image_cleaned = image_cover.lstrip("./")  # Supprime les './' et '../'
+            image_url = base_url + image_cleaned  # Supprimer "catalogue/"
             print(f"URL de l'image scrapée : {image_url}")  # Log de l'URL de l'image
             
             return {
@@ -101,29 +101,29 @@ def scrape_book_infos(url_product):
         print(f"Erreur {response.status_code} : Impossible de récupérer la page du livre.")
         return None
 
-def scrape_pages_book_urls(url, category_name):
-    """Scrape tous les livres d'une catégorie"""
-    print(f"Exploration de la catégorie : {url}")
+def scraper(base_url, category_name):
+    #Scrape tous les livres d'une catégorie
+    print(f"Exploration de la catégorie : {base_url}")
     all_books = []
-    while url:
-        response = requests.get(url)
+    while base_url:
+        response = requests.get(base_url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
-            books = soup.find_all('article', class_='product_pod')
+            books_html = soup.find_all('article', class_='product_pod')
             
-            print(f"{len(books)} livres trouvés sur cette page")
+            print(f"{len(books_html)} livres trouvés sur cette page")
             
-            for book in books: 
+            for book in books_html: 
                 title = book.find('h3').find('a')['title']
                 # Correction de l'URL du livre
                 book_relative_url = book.find('h3').find('a')['href']
                 # Supprimer les '../' et construire l'URL correcte
-                book_url = url.rsplit('/', 4)[0] + "/" + book_relative_url.replace('../', '')
+                book_url = base_url.rsplit('/', 4)[0] + "/" + book_relative_url.replace('../', '')
                 print(f"Traitement du livre : {title}")
                 print(f"URL du livre : {book_url}")
                 
-                #Appelle scrape_book_infos pour générer le dictionnaire qui nous intéresse
-                book_info = scrape_book_infos(book_url)
+                #Appelle book_data_scraper pour générer le dictionnaire qui nous intéresse
+                book_info = book_data_scraper(book_url)
                 
                 if book_info is None:
                     book_info = {}
@@ -147,8 +147,8 @@ def scrape_pages_book_urls(url, category_name):
             next_page = soup.find('li', class_='next')
             if next_page:
                 next_page_url = next_page.find('a')['href']
-                base_url = url.rsplit('/', 1)[0]
-                url = base_url + '/' + next_page_url
+                base_url = base_url.rsplit('/', 1)[0]
+                base_url = base_url + '/' + next_page_url
                 print("Passage à la page suivante")
             else:
                 break
@@ -183,7 +183,7 @@ print("Démarrage du scraping")
 livres_categories_links = scrape_categories()
 
 all_books = []
-for category_name, scraping_category_link in livres_categories_links:
-    all_books.extend(scrape_pages_book_urls(scraping_category_link, category_name))
+for category_name, scraper_category_link in livres_categories_links:
+    all_books.extend(scraper(scraper_category_link, category_name))
 
 print(f"Scraping terminé. {len(all_books)} livres téléchargés.")
