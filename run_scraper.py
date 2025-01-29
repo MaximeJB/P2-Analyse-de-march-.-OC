@@ -171,16 +171,40 @@ def scraper(base_url, category_name):
 
     # Créer un fichier CSV par catégorie
     csv_filename = f"{category_name.replace('/', '_')}.csv"
-    with open(category_name + "/" + csv_filename, 'w', newline='', encoding='utf-8') as csvfile:
-        fieldnames = ['titre', 'prix', 'Dispo', 'upc', 'price_incl_tax', 'price_excl_tax', 
-                      'availability', 'description', 'category', 'review_rating', 'image_url']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+    with open(category_name + "/" + csv_filename, 'w', newline='', encoding='utf-8-sig') as csvfile:
+        fieldnames = [
+        'titre', 
+        'prix', 
+        'Dispo', 
+        'upc', 
+        'price_incl_tax', 
+        'price_excl_tax', 
+        'availability', 
+        'description', 
+        'category', 
+        'review_rating', 
+        'image_url'
+        ]
+        
+        #délimiteur
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter='|')
+
+         
+        writer.writerow({field: f" {field} " for field in fieldnames})
+    
+    
+        separator_dict = {field: "-" * 20 for field in fieldnames}
+        writer.writerow(separator_dict)
 
         for book_data in all_books:
-            cleaned_book_data = {key: value.replace("Â", "") if isinstance(value, str) else value for key, value in book_data.items()} 
-            writer.writerow(cleaned_book_data)
-    
+        
+            cleaned_book_data = {key: value.replace("Â", "") if isinstance(value, str) else value 
+                           for key, value in book_data.items()}
+        
+            formatted_data = {key: f" {value} " for key, value in cleaned_book_data.items()}
+        
+            writer.writerow(formatted_data)
+      
     return all_books
     
     
@@ -190,7 +214,7 @@ print("Démarrage du scraping")
 livres_categories_links = scrape_categories()
 
 all_books = []
-for category_name, scraper_category_link in livres_categories_links:
-    all_books.extend(scraper(scraper_category_link, category_name))
+for category_name, scraped_category_link in livres_categories_links:
+    all_books.extend(scraper(scraped_category_link, category_name))
 
 print(f"Scraping terminé. {len(all_books)} livres téléchargés.")
