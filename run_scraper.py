@@ -8,21 +8,26 @@ base_url = "https://books.toscrape.com/"
 def scrape_categories():
     #Récupère uniquement les liens des catégories réelles, en ignorant 'books"
     print("Début de la recherche des catégories...")
+
     all_categories_links = []
     response = requests.get(base_url)
     if response.status_code == 200: #On vérifie que la requête marche
+
         soup = BeautifulSoup(response.text, 'html.parser')
         categories = soup.find("div", class_="side_categories")
         links_categories = categories.find_all("a")
+
         for categories_title in links_categories[1:]:  # Ignorer le premier lien (books)
             concatenation_url = base_url + categories_title["href"]
             all_categories_links.append((categories_title.text.strip(), concatenation_url))
+
         print(f"{len(all_categories_links)} catégories trouvées")
     return all_categories_links
 
 def download_image(image_url, book_title, category_name):
     "Télécharge l'image d'un livre"
     print(f"Tentative de téléchargement de l'image pour : {book_title}")  # Print verificatif de la fontion
+
     image_directory = category_name + "/book_images"
     os.makedirs(image_directory, exist_ok=True)
 
@@ -32,6 +37,7 @@ def download_image(image_url, book_title, category_name):
     clean_title = clean_title.replace("\"", "_").replace("<", "_").replace(">", "_").replace("|", "_")
     image_name = clean_title.replace(" ", "_").lower()[:50] + ".jpg"  # Limite à 50 caractères
     image_path = os.path.join(image_directory, image_name)
+
     response_image = requests.get(image_url)
     if response_image.status_code == 200:
         with open(image_path, "wb") as f:
@@ -43,6 +49,7 @@ def download_image(image_url, book_title, category_name):
 def book_data_scraper(url_product):
     #Récupère les informations détaillées d'un livre
     print(f"Récupération des informations du livre : {url_product}")
+
     response = requests.get(url_product)
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -104,10 +111,12 @@ def book_data_scraper(url_product):
 def scraper(base_url, category_name):
     #Scrape tous les livres d'une catégorie
     print(f"Exploration de la catégorie : {base_url}")
+
     all_books = []
     while base_url:
         response = requests.get(base_url)
         if response.status_code == 200:
+
             soup = BeautifulSoup(response.text, 'html.parser')
             books_html = soup.find_all('article', class_='product_pod')
             
@@ -155,13 +164,10 @@ def scraper(base_url, category_name):
         else:
             print(f"Erreur {response.status_code}: Impossible de récupérer la page.")
             break
-    
-    
-    try: 
-        folder = os.mkdir(category_name)
-    except FileExistsError:
-        print(f"Directory '{category_name}' already exists.")
 
+     
+        folder = os.makedirs(category_name, exist_ok=True)
+  
 
     # Créer un fichier CSV par catégorie
     csv_filename = f"{category_name.replace('/', '_')}.csv"
@@ -170,6 +176,7 @@ def scraper(base_url, category_name):
                       'availability', 'description', 'category', 'review_rating', 'image_url']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
+
         for book_data in all_books:
             cleaned_book_data = {key: value.replace("Â", "") if isinstance(value, str) else value for key, value in book_data.items()} 
             writer.writerow(cleaned_book_data)
